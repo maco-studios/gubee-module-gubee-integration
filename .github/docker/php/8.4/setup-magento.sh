@@ -106,12 +106,12 @@ fi
 composer config minimum-stability dev
 composer config prefer-stable true
 
-if [ ! -d "${MAGENTO_ROOT}/vendor/gubee-marketplace/integration-module" ]; then
-    log "Requiring gubee-marketplace/integration-module..."
-    composer require --no-interaction gubee-marketplace/integration-module:@dev
+if [ ! -d "${MAGENTO_ROOT}/vendor/gubee-marketplace/module-gubee-integration" ]; then
+    log "Requiring gubee-marketplace/module-gubee-integration..."
+    composer require --no-interaction gubee-marketplace/module-gubee-integration:@dev
 else
     log "Module already required, running composer update for it..."
-    composer update --no-interaction gubee-marketplace/integration-module gubee-marketplace/php-sdk
+    composer update --no-interaction gubee-marketplace/module-gubee-integration gubee-marketplace/php-sdk
 fi
 
 if [ ! -f "${MAGENTO_ROOT}/app/etc/env.php" ]; then
