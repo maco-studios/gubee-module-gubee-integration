@@ -2,7 +2,7 @@
 [![PHP Version](https://img.shields.io/badge/PHP-%3E%3D8.1-777BB4.svg)](composer.json)
 [![Magento](https://img.shields.io/badge/Magento-2.4.8%2B-F26322.svg)](compose.yml)
 
-🇬🇧 English | 🇧🇷 [Português](README.pt-BR.md)
+English | [Português](README.pt-BR.md)
 
 ## Installation
 
