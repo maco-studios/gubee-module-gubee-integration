@@ -42,7 +42,7 @@ return (new PhpCsFixer\Config())
         'unary_operator_spaces' => true,
         'header_comment' => [
             'comment_type' => 'PHPDoc',
-            'header' => $license->header(),
+            'header' => trim($license->header()),
             'location' => 'after_declare_strict',
             'separate' => 'both',
         ],
