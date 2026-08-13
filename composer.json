@@ -66,6 +66,7 @@
         "normalize-check": "composer normalize --dry-run --diff",
         "phpcbf": "phpcbf",
         "phpcs": "phpcs",
-        "phpstan": "phpstan analyse"
+        "phpstan": "phpstan analyse",
+        "test": "pest"
     }
 }
