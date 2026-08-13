@@ -1,0 +1,31 @@
+# --- Dependencies -----------------------------------------------------------
+# Installed via `composer install`; composer.lock is what's committed instead.
+/vendor/
+
+# --- Environment --------------------------------------------------------
+# Local secrets/config; .env.example is the template that IS committed.
+.env
+
+# --- Local tool config overrides -----------------------------------------
+# Shared defaults ship as *.dist (phpcs.xml.dist, phpstan.neon.dist,
+# .php-cs-fixer.dist.php) and ARE committed. Each tool auto-loads its plain
+# (non-.dist) filename first if present, so a dev can drop one of these to
+# tweak sniffs/rules/paths locally without touching the shared config.
+# These must stay untracked so local tweaks never leak into a commit.
+/phpcs.xml
+/phpstan.neon
+/.php-cs-fixer.php
+
+# --- Tool caches ----------------------------------------------------------
+# Speed-up caches written by phpcs, phpstan and php-cs-fixer; safe to delete,
+# regenerated on next run, and machine/state-specific.
+/.phpcs-cache
+/.phpstan-cache
+/.php-cs-fixer.cache
+/.phpunit.cache
+
+# --- OS / editor cruft ------------------------------------------------------
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

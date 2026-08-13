@@ -1,0 +1,181 @@
+services:
+  laravel.test:
+    image: "magento-${PHP_VERSION:-8.4}/app"
+    build:
+      context: "./.github/docker/php/${PHP_VERSION:-8.4}"
+      dockerfile: Dockerfile
+      args:
+        WWWGROUP: "${WWWGROUP:-1000}"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "${APP_PORT:-80}:80"
+    environment:
+      WWWUSER: "${WWWUSER:-1000}"
+      LARAVEL_SAIL: 1
+      XDEBUG_MODE: "${SAIL_XDEBUG_MODE:-off}"
+      XDEBUG_CONFIG: "${SAIL_XDEBUG_CONFIG:-client_host=host.docker.internal}"
+      IGNITION_LOCAL_SITES_PATH: "${PWD}"
+      SSH_AUTH_SOCK: /run/host-services/ssh-auth.sock
+      APP_PORT: "${APP_PORT:-80}"
+      DB_DATABASE: "${DB_DATABASE:-magento}"
+      DB_USERNAME: "${DB_USERNAME:-magento}"
+      DB_PASSWORD: "${DB_PASSWORD:-magento}"
+      RABBITMQ_USER: "${RABBITMQ_USER:-magento}"
+      RABBITMQ_PASSWORD: "${RABBITMQ_PASSWORD:-magento}"
+      RABBITMQ_VHOST: "${RABBITMQ_VHOST:-/}"
+      MAGENTO_VERSION: "${MAGENTO_VERSION:-2.4.8}"
+      MAGENTO_ADMIN_USER: "${MAGENTO_ADMIN_USER:-admin}"
+      MAGENTO_ADMIN_PASSWORD: "${MAGENTO_ADMIN_PASSWORD:-Admin123!}"
+      MAGENTO_ADMIN_EMAIL: "${MAGENTO_ADMIN_EMAIL:-admin@example.com}"
+    volumes:
+      - ".:/module"
+      - "magento-app:/var/www/html"
+      - "${SSH_AUTH_SOCK:-/dev/null}:/run/host-services/ssh-auth.sock"
+      - "${HOME}/.ssh:/home/sail/.ssh"
+    networks:
+      - magento
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      opensearch:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      mailpit:
+        condition: service_started
+      rabbitmq:
+        condition: service_healthy
+  mysql:
+    image: "mysql:8.4"
+    # Magento connects as a non-root DB user, which lacks the SUPER
+    # privilege MySQL 8 requires (since binary logging is on by default)
+    # to create triggers/functions during setup:install.
+    command: --log-bin-trust-function-creators=1
+    ports:
+      - "${FORWARD_DB_PORT:-3306}:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: "${DB_PASSWORD:-magento}"
+      MYSQL_ROOT_HOST: "%"
+      MYSQL_DATABASE: "${DB_DATABASE:-magento}"
+      MYSQL_USER: "${DB_USERNAME:-magento}"
+      MYSQL_PASSWORD: "${DB_PASSWORD:-magento}"
+      MYSQL_ALLOW_EMPTY_PASSWORD: 1
+      MYSQL_EXTRA_OPTIONS: "${MYSQL_EXTRA_OPTIONS:-}"
+    volumes:
+      - "magento-mysql:/var/lib/mysql"
+      - "./vendor/laravel/sail/database/mysql/create-testing-database.sh:/docker-entrypoint-initdb.d/10-create-testing-database.sh"
+    networks:
+      - magento
+    healthcheck:
+      test:
+        - CMD
+        - mysqladmin
+        - ping
+        - "-p${DB_PASSWORD}"
+      retries: 3
+      timeout: 5s
+  redis:
+    image: "redis:alpine"
+    ports:
+      - "${FORWARD_REDIS_PORT:-6379}:6379"
+    volumes:
+      - "magento-redis:/data"
+    networks:
+      - magento
+    healthcheck:
+      test:
+        - CMD
+        - redis-cli
+        - ping
+      retries: 3
+      timeout: 5s
+  minio:
+    image: "minio/minio:latest"
+    ports:
+      - "${FORWARD_MINIO_PORT:-9000}:9000"
+      - "${FORWARD_MINIO_CONSOLE_PORT:-8900}:8900"
+    environment:
+      MINIO_ROOT_USER: sail
+      MINIO_ROOT_PASSWORD: password
+    volumes:
+      - "magento-minio:/data"
+    networks:
+      - magento
+    command: 'minio server /data --console-address ":8900"'
+    healthcheck:
+      test:
+        - CMD
+        - mc
+        - ready
+        - local
+      retries: 3
+      timeout: 5s
+  opensearch:
+    image: "opensearchproject/opensearch:2"
+    ports:
+      - "${FORWARD_OPENSEARCH_PORT:-9200}:9200"
+    environment:
+      discovery.type: single-node
+      plugins.security.disabled: "true"
+      OPENSEARCH_JAVA_OPTS: "-Xms512m -Xmx512m"
+      OPENSEARCH_INITIAL_ADMIN_PASSWORD: "${OPENSEARCH_INITIAL_ADMIN_PASSWORD:-Magento_Opensearch1!}"
+    volumes:
+      - "magento-opensearch:/usr/share/opensearch/data"
+    networks:
+      - magento
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - 'curl -s http://localhost:9200/_cluster/health | grep -q ''"status"'''
+      retries: 5
+      timeout: 5s
+  mailpit:
+    image: "axllent/mailpit:latest"
+    ports:
+      - "${FORWARD_MAILPIT_PORT:-1025}:1025"
+      - "${FORWARD_MAILPIT_DASHBOARD_PORT:-8025}:8025"
+    networks:
+      - magento
+  rabbitmq:
+    image: "rabbitmq:4-management-alpine"
+    hostname: rabbitmq
+    ports:
+      - "${FORWARD_RABBITMQ_PORT:-5672}:5672"
+      - "${FORWARD_RABBITMQ_DASHBOARD_PORT:-15672}:15672"
+    environment:
+      RABBITMQ_HOST: "%"
+      RABBITMQ_DEFAULT_USER: "${RABBITMQ_USER:-magento}"
+      RABBITMQ_DEFAULT_PASS: "${RABBITMQ_PASSWORD:-magento}"
+      RABBITMQ_VHOST: "${RABBITMQ_VHOST:-/}"
+      RABBITMQ_QUEUE: "${RABBITMQ_QUEUE:-magento}"
+    volumes:
+      - "magento-rabbitmq:/var/lib/rabbitmq"
+    networks:
+      - magento
+    healthcheck:
+      test:
+        - CMD
+        - rabbitmq-diagnostics
+        - "-q"
+        - ping
+      retries: 3
+      timeout: 5s
+networks:
+  magento:
+    driver: bridge
+volumes:
+  magento-app:
+    driver: local
+  magento-mysql:
+    driver: local
+  magento-redis:
+    driver: local
+  magento-minio:
+    driver: local
+  magento-opensearch:
+    driver: local
+  magento-rabbitmq:
+    driver: local
