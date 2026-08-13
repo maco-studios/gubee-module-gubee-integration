@@ -50,6 +50,7 @@
             "ergebnis/composer-normalize": true,
             "mage-os/composer-dependency-version-audit-plugin": true,
             "pestphp/pest-plugin": true,
+            "php-http/discovery": false,
             "phpstan/extension-installer": true
         },
         "optimize-autoloader": true,
