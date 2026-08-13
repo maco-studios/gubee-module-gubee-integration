@@ -3,7 +3,7 @@
     <description>Coding standard for the Gubee Integration Magento 2 module.</description>
 
     <file>src</file>
-    <file>test</file>
+    <file>tests</file>
 
     <arg name="basepath" value="."/>
     <arg name="colors"/>
